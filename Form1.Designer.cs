@@ -38,6 +38,7 @@
             btnStart = new Button();
             btnStop = new Button();
             btnCapture = new Button();
+            btnLogout = new Button();
             panel2 = new Panel();
             dgvDefectResult = new DataGridView();
             lblResultTableTitle = new Label();
@@ -177,6 +178,7 @@
             flowMainControls.Controls.Add(btnStart);
             flowMainControls.Controls.Add(btnStop);
             flowMainControls.Controls.Add(btnCapture);
+            flowMainControls.Controls.Add(btnLogout);
             flowMainControls.Dock = DockStyle.Fill;
             flowMainControls.Location = new Point(0, 0);
             flowMainControls.Name = "flowMainControls";
@@ -220,6 +222,18 @@
             btnCapture.Text = "Capture";
             btnCapture.UseVisualStyleBackColor = false;
             btnCapture.Click += btnCapture_Click;
+            // 
+            // btnLogout
+            // 
+            btnLogout.BackColor = Color.Gray;
+            btnLogout.ForeColor = Color.Black;
+            btnLogout.Location = new Point(515, 13);
+            btnLogout.Name = "btnLogout";
+            btnLogout.Size = new Size(158, 52);
+            btnLogout.TabIndex = 3;
+            btnLogout.Text = "Logout";
+            btnLogout.UseVisualStyleBackColor = false;
+            btnLogout.Click += btnLogout_Click;
             // 
             // panel2
             // 
@@ -590,6 +604,7 @@
         private Button btnStart;
         private Button btnStop;
         private Button btnCapture;
+        private Button btnLogout;
         private Label lblDefectHeader;
         private Label lblResultTableTitle;
         private DataGridView dgvDefectResult;

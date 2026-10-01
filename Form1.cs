@@ -24,9 +24,39 @@ namespace Hwaseung
         private Bitmap _currentFrame = null;
         private readonly object _lockObj = new object();
         private bool _isUpdatingSettingsUi = false;
+        public bool LogoutRequested { get; private set; }
+
+        private static string L(string key) => LocalizationService.T(key);
+
         public Form1()
         {
             InitializeComponent();
+            ApplyLocalization();
+        }
+
+        private void ApplyLocalization()
+        {
+            Text = L("App_Title");
+            label1.Text = L("Main_Header");
+            tabPage1.Text = L("Main_Tab");
+            tabPage2.Text = L("Setting_Tab");
+            lblResultTableTitle.Text = L("Result_List");
+            lblDefectHeader.Text = L("Defect_Result");
+            btnStart.Text = L("Start");
+            btnStop.Text = L("Stop");
+            btnCapture.Text = L("Capture");
+            btnLogout.Text = L("Logout");
+            btnReadSettings.Text = L("Read_Camera");
+            btnApplySettings.Text = L("Apply");
+            chkAutoApply.Text = L("Auto_Apply");
+            lblBrightness.Text = L("Brightness");
+            lblContrast.Text = L("Contrast");
+            lblSharpness.Text = L("Sharpness");
+            lblExposure.Text = L("Exposure_Time");
+            lblGain.Text = L("Exposure_Gain");
+            colDefectType.HeaderText = L("Type");
+            colDefectPosition.HeaderText = L("Position");
+            colDefectCrop.HeaderText = L("Crop_Image");
         }
         // 1. Nút kết nối và mở live camera
         private void btnStart_Click(object sender, EventArgs e)
@@ -47,9 +77,8 @@ namespace Hwaseung
             catch (BadImageFormatException)
             {
                 MessageBox.Show(
-                    "Không thể nạp thư viện toupcam.dll do sai kiến trúc (x86/x64).\n" +
-                    "Hãy chạy ứng dụng ở x64 và dùng đúng bản SDK x64.",
-                    "Lỗi nạp thư viện camera",
+                    L("Camera_DllArch_Message"),
+                    L("Camera_DllLoad_Title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
                 return;
@@ -78,21 +107,14 @@ namespace Hwaseung
                         btnStart.Enabled = false;
                         btnStop.Enabled = true;
                         btnCapture.Enabled = true;
-                        MessageBox.Show("Đã mở camera theo chế độ UVC (DirectShow), không dùng SDK Toupcam.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(L("Camera_UvcOpened_Message"), L("Notify_Title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
 
                     var report = BuildCameraDiagnosticReport();
                 MessageBox.Show(
-                    "Không tìm thấy Camera XCAM/ToupTek qua cổng USB.\n\n" +
-                    "Vui lòng kiểm tra:\n" +
-                    "1) Camera đã được cấp nguồn và đèn trạng thái hoạt động.\n" +
-                    "2) Đã cài đúng driver của hãng camera.\n" +
-                    "3) Thử đổi cổng USB/cáp USB khác.\n" +
-                    "4) Đóng các ứng dụng khác đang chiếm camera.\n" +
-                    "5) Nếu đang dùng chính sách bảo mật doanh nghiệp, kiểm tra quyền truy cập USB/camera.\n\n" +
-                    report,
-                    "Không tìm thấy camera",
+                    string.Format(L("Camera_NotFound_Message"), report),
+                    L("Camera_NotFound_Title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
                 return;
@@ -227,7 +249,7 @@ namespace Hwaseung
             }
             else
             {
-                MessageBox.Show("Không thể kết nối XCam 1080p!");
+                MessageBox.Show(L("Camera_CannotConnect1080p"), L("Error_Title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -382,7 +404,7 @@ namespace Hwaseung
                 capturedFrame.Save(filePath, ImageFormat.Png);
                 capturedFrame.Dispose();
 
-                MessageBox.Show($"Đã chụp và lưu ảnh kiểm tra: {filePath}", "Thành công");
+                MessageBox.Show(string.Format(L("Capture_Saved"), filePath), L("Success_Title"));
             }
         }
 
@@ -393,6 +415,12 @@ namespace Hwaseung
             btnStart.Enabled = true;
             btnStop.Enabled = false;
             btnCapture.Enabled = false;
+        }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            LogoutRequested = true;
+            Close();
         }
 
         private void CloseCamera()
@@ -420,7 +448,7 @@ namespace Hwaseung
                 pictureBox1.Image = null;
             }
             ClearDefectResultsGrid();
-            MessageBox.Show($"Stop camera Thành công");
+            MessageBox.Show(L("Stop_Camera_Success"), L("Success_Title"));
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -429,6 +457,8 @@ namespace Hwaseung
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            ApplyLocalization();
+
             trackBrightness.Minimum = Toupcam.BRIGHTNESS_MIN;
             trackBrightness.Maximum = Toupcam.BRIGHTNESS_MAX;
             trackBrightness.Value = Toupcam.BRIGHTNESS_DEF;
@@ -497,19 +527,9 @@ namespace Hwaseung
 
         private void ShowNativeLibraryLoadError(DllNotFoundException ex)
         {
-            var hint =
-                "Không thể nạp toupcam.dll hoặc dependency của nó.\n\n" +
-                "Nguyên nhân phổ biến:\n" +
-                "1) DLL bị Application Control chặn (mã lỗi 4551 / 0x800711C7).\n" +
-                "2) Sai kiến trúc DLL (x86/x64).\n" +
-                "3) Thiếu VC++ runtime phụ thuộc.\n\n" +
-                "Cách xử lý nhanh:\n" +
-                "- Mở PowerShell (Run as Administrator) và chạy: Get-ChildItem -Recurse | Unblock-File\n" +
-                "- Đảm bảo chạy cấu hình x64 và dùng toupcam.dll bản x64.\n" +
-                "- Nếu máy có AppLocker/WDAC, cần whitelist toupcam.dll theo chính sách IT.\n\n" +
-                $"Chi tiết lỗi: {ex.Message}";
+            var hint = string.Format(L("Dll_Hint"), ex.Message);
 
-            MessageBox.Show(hint, "Lỗi nạp thư viện camera", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(hint, L("Camera_DllLoad_Title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private void TryAutoApplySettings()
@@ -533,7 +553,7 @@ namespace Hwaseung
             if (_cam == null)
             {
                 if (showMessage)
-                    MessageBox.Show("Camera chưa kết nối.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(L("Camera_NotConnected"), L("Notify_Title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return false;
             }
 
@@ -552,9 +572,13 @@ namespace Hwaseung
             if (showMessage)
             {
                 if (ok)
-                    MessageBox.Show("Đã áp dụng thông số camera.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(L("Camera_Apply_Success"), L("Success_Title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 else
-                    MessageBox.Show($"Áp dụng thất bại. HResult: {_cam.HResult} - {Toupcam.HResult2String(_cam.HResult)}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(
+                        string.Format(L("Camera_Apply_Failed"), _cam.HResult, Toupcam.HResult2String(_cam.HResult)),
+                        L("Error_Title"),
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
             }
 
             return ok;
